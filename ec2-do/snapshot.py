@@ -72,7 +72,25 @@ def list_volumes(project):
 def instances():
     """Commands for instances"""
 
-@instances.command('list')
+@instances.command('snapshot',
+    help="Create snapshots of all volumes")
+@click.option('--project', default=None,
+    help="Only instances for project (tag Project:<name>)")
+def list_instances(project):
+    "Create snapshots for EC2 instances"
+
+    instances = filter_instances(project)
+
+    for i in instances:
+        i.stop()
+        for v in i.volumes.all():
+            print("Creating snapshot of {0}".format(v.id))
+            v.create_snapshot(Description="Created by SnapshotAutoCreator")
+
+    return
+
+@instances.command('list',
+    help="List instances")
 @click.option('--project', default=None,
     help="Only instances for project (tag Project:<name>)")
 def list_instances(project):
