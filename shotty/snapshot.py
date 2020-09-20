@@ -21,8 +21,15 @@ def has_pending_snapshot(volume):
     return snapshots and snapshots[0].state == 'pending'
 
 @click.group()
-def cli():
+@click.option('--profile', default=None,
+    help="Use --profile to override the AWS default profile")
+def cli(profile):
     """Commands to do EC2 things"""
+    
+    if profile:
+        session = boto3.Session(profile_name=profile)
+        ec2 = session.resource('ec2')
+    return
 
 @cli.group('snapshots')
 def snapshots():
