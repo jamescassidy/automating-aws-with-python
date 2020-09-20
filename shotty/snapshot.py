@@ -111,10 +111,12 @@ def list_instances(project, force):
             i.wait_until_running()
 
         print("Job's done")
-    else:
-        print("Cannot stop instances without either the --project or --force flag")
 
-    return
+        return
+
+    else:
+        print("Error: Cannot stop instances without either the --project or --force flag")
+        return 1
 
 @instances.command('list',
     help="List instances")
@@ -156,10 +158,10 @@ def list_instances(project, force):
             except botocore.exceptions.ClientError as e:
                 print(" Could not stop {0}. ".format(i.id) + str(e))
                 continue
+        return
     else:
-        print("Cannot stop instances without either the --project or --force flag")
-
-    return
+        print("Error: Cannot stop instances without either the --project or --force flag")
+        return 1
 
 @instances.command('start')
 @click.option('--project', default=None,
@@ -179,10 +181,10 @@ def list_instances(project, force):
             except botocore.exceptions.ClientError as e:
                 print(" Could not start {0}. ".format(i.id) + str(e))
                 continue
+        return
     else:
-        print("Cannot stop instances without either the --project or --force flag")
-
-    return
+        print("Error: Cannot stop instances without either the --project or --force flag")
+        return 1
 
 @instances.command('reboot')
 @click.option('--project', default=None,
@@ -202,10 +204,10 @@ def list_instances(project, force):
             except botocore.exceptions.ClientError as e:
                 print(" Could not reboot {0}. ".format(i.id) + str(e))
                 continue
+        return
     else:
-        print("Cannot stop instances without either the --project or --force flag")
-
-    return
+        print("Error: Cannot stop instances without either the --project or --force flag")
+        return 1
 
 if __name__ == '__main__':
     cli()
