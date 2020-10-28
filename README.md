@@ -14,7 +14,7 @@ Webotron currently has the following features:
 - Create and set up bucket
 - Sync directory tree to bucket
 
-=====================================================================================
+================================================================================
 
 ## shotty
 
