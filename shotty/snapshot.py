@@ -5,6 +5,7 @@ import click
 session = boto3.Session(profile_name='default')
 ec2 = session.resource('ec2')
 
+
 def filter_instances(project):
     instances = []
 
@@ -16,9 +17,11 @@ def filter_instances(project):
 
     return instances
 
+
 def has_pending_snapshot(volume):
     snapshots = list(volume.snapshots.all())
     return snapshots and snapshots[0].state == 'pending'
+
 
 @click.group()
 @click.option('--profile', default=None,
@@ -30,6 +33,7 @@ def cli(profile):
         session = boto3.Session(profile_name=profile)
         ec2 = session.resource('ec2')
     return
+
 
 @cli.group('snapshots')
 def snapshots():
@@ -58,6 +62,7 @@ def list_snapshots(project, list_all):
                 )))
                 if s.state == 'completed' and not list_all: break
     return
+
 
 
 @cli.group('volumes')
@@ -94,6 +99,8 @@ def list_volumes(project, instance):
                 v.encrypted and "Encrypted" or "Not Encrypted"
             )))
     return
+
+
 
 @cli.group('instances')
 def instances():
