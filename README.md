@@ -5,7 +5,7 @@ Repository for the A Cloud Guru course Automating AWS with Python
 
 Webotron is a script which will sync a local directory to an s3 bucket, and optionally configure Route 53 and Cloudfront as well.
 
-## Features
+### Features
 
 Webotron currently has the following features:
 
@@ -14,9 +14,13 @@ Webotron currently has the following features:
 - Create and set up bucket
 - Sync directory tree to bucket
 
+=====================================================================================
+
 ## shotty
 
 Shotty is a script which will create snapshots of database
+
+### Features
 
 Shotty currently has the following features:
 
