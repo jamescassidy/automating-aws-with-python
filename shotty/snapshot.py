@@ -2,7 +2,7 @@ import boto3
 import botocore
 import click
 
-session = boto3.Session(profile_name='snapshot')
+session = boto3.Session(profile_name='default')
 ec2 = session.resource('ec2')
 
 def filter_instances(project):
@@ -25,7 +25,7 @@ def has_pending_snapshot(volume):
     help="Use --profile to override the AWS default profile")
 def cli(profile):
     """Commands to do EC2 things"""
-    
+
     if profile:
         session = boto3.Session(profile_name=profile)
         ec2 = session.resource('ec2')
@@ -67,10 +67,22 @@ def volumes():
 @volumes.command('list')
 @click.option('--project', default=None,
     help="Only volumes for project (tag Project:<name>)")
-def list_volumes(project):
+@click.option('--instance', default=None,
+    help="Use --instance to reboot a single")
+def list_volumes(project, instance):
     "List ec2 volumes"
 
     instances = filter_instances(project)
+
+    if instance:
+        for v in ec2.Instance(instance).volumes.all():
+            print(", ".join((
+                v.id,
+                v.state,
+                str(v.size) + "GiB",
+                v.encrypted and "Encrypted" or "Not Encrypted"
+            )))
+        return
 
     for i in instances:
         for v in i.volumes.all():
@@ -91,7 +103,7 @@ def instances():
     help="Create snapshots of all volumes")
 @click.option('--project', default=None,
     help="Only instances for project (tag Project:<name>)")
-@click.option('--force', 'force', default=False, is_flag=True,
+@click.option('--force', default=False, is_flag=True,
     help="Use --force to stop instances without the project name")
 def list_instances(project, force):
     "Create snapshots for EC2 instances"
@@ -100,22 +112,35 @@ def list_instances(project, force):
 
     if project or force:
         for i in instances:
-            print("Stopping {0}...".format(i.id))
+            state = i.state['Name']
 
-            i.stop()
-            i.wait_until_stopped()
+            try:
+                if state == "running":
+                    print("Stopping {0}...".format(i.id))
 
-            for v in i.volumes.all():
-                if has_pending_snapshot(v):
-                    print(" Skipping {0}, snapshot already in progress".format(v.id))
+                    i.stop()
+                    i.wait_until_stopped()
+                else:
                     continue
-                print("Creating snapshot of {0}".format(v.id))
-                v.create_snapshot(Description="Created by SnapshotAutoCreator")
-            
-            print("Starting {0}...".format(i.id))
 
-            i.start()
-            i.wait_until_running()
+                for v in i.volumes.all():
+                    if has_pending_snapshot(v):
+                        print(" Skipping {0}, snapshot already in progress".format(v.id))
+                        continue
+                    print("Creating snapshot of instance {0}, volume {1}".format(i.id, v.id))
+                    v.create_snapshot(Description="Created by SnapshotAutoCreator")
+                
+                if state == "running":
+                    print("Starting {0}...".format(i.id))
+
+                    i.start()
+                    i.wait_until_running()
+                else:
+                    continue
+            
+            except botocore.exceptions.ClientError as e:
+                print(" Could not snapshot {0}. ".format(i.id) + str(e))
+                continue
 
         print("Job's done")
 
@@ -142,7 +167,7 @@ def list_instances(project):
             i.placement['AvailabilityZone'],
             i.state['Name'],
             i.public_dns_name,
-            tags.get('Project', '<no project')
+            tags.get('Project', '<no project>')
             )))
 
     return
@@ -150,10 +175,17 @@ def list_instances(project):
 @instances.command('stop')
 @click.option('--project', default=None,
     help="Only instances for project (tag Project:<name>)")
-@click.option('--force', 'force', default=False, is_flag=True,
+@click.option('--force', default=False, is_flag=True,
     help="Use --force to stop instances without the project name")
-def list_instances(project, force):
+@click.option('--instance', default=None,
+    help="Use --instance to reboot a single")
+def list_instances(project, force, instance):
     "Stop ec2 instances"
+
+    if instance:
+        print(f"Stopping {instance}...")
+        ec2.Instance(instance).stop()
+        return
 
     instances = filter_instances(project)
     
@@ -173,10 +205,18 @@ def list_instances(project, force):
 @instances.command('start')
 @click.option('--project', default=None,
     help="Only instances for project (tag Project:<name>)")
-@click.option('--force', 'force', default=False, is_flag=True,
+@click.option('--force', default=False, is_flag=True,
     help="Use --force to stop instances without the project name")
-def list_instances(project, force):
+@click.option('--instance', default=None,
+    help="Use --instance to reboot a single")
+def list_instances(project, force, instance):
     "Start ec2 instances"
+
+    if instance:
+        print(f"Starting {instance}...")
+        ec2.Instance(instance).start()
+    
+        return
 
     instances = filter_instances(project)
 
@@ -196,10 +236,18 @@ def list_instances(project, force):
 @instances.command('reboot')
 @click.option('--project', default=None,
     help="Only instances for project (tag Project:<name>)")
-@click.option('--force', 'force', default=False, is_flag=True,
-    help="Use --force to stop instances without the project name")
-def list_instances(project, force):
+@click.option('--force', default=False, is_flag=True,
+    help="Use --force to reboot instances without the project name")
+@click.option('--instance', default=None,
+    help="Use --instance to reboot a single")
+def list_instances(project, force, instance):
     "Reboot ec2 instances"
+
+    if instance:
+        print(f"Rebooting {instance}...")
+        ec2.Instance(instance).reboot()
+        
+        return
 
     instances = filter_instances(project)
 
